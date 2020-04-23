@@ -1,7 +1,6 @@
 # 项目说明 
 ------
-
-一份技术方案的设计文档，内容包括：项目流程图、项目功能介绍、方案设计说明等
+是一个简单的腾讯课堂爬虫涉及
 
 > * 功能介绍
 > * 方案设计
@@ -20,9 +19,9 @@
 ### 2. 方案设计
 
 目录服务说明：
-    1、crawler 爬虫服务，抓取数据 并把数据导入到Redis 队列，队列名称，fudao_history。
-    2、fudao_consumer 数据消费者服务。从redis队列消费数据 写入到Redis。
-    3、fudao_viewer 历史数据 前端数据API，提供查看功能。
+####    1、crawler 爬虫服务，抓取数据 并把数据导入到Redis 队列，队列名称，fudao_history。
+####    2、fudao_consumer 数据消费者服务。从redis队列消费数据 写入到Redis。
+####    3、fudao_viewer 历史数据 前端数据API，提供查看功能。
 
 
 ### a. 系统要求
