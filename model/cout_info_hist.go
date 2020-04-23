@@ -26,13 +26,13 @@ func NewCountHistModel(db *gorm.DB) *CountHistoryModel {
 	}
 }
 
-func (a *CountHistoryModel) Insert(order *CountInfoHist) (list []string, err error) {
+func (a *CountHistoryModel) Insert(order *CountInfoHist) (err error) {
 	return a.Db.Save(order).Error
 }
 
-func (a *CountHistoryModel) QueryCountList() error {
+func (a *CountHistoryModel) QueryCountList() (list []CountInfoHist, err error) {
 
-	rawSQL := `SELECT date_time,subject
+	rawSQL := `SELECT id,date_time,subject,sys_count,course_count,create_time
 		FROM fudao_count_hist
 		WHERE order by date_time desc
 	`
@@ -42,11 +42,13 @@ func (a *CountHistoryModel) QueryCountList() error {
 	}
 
 	defer rows.Close()
+
+	list = []CountInfoHist{}
+	item := CountInfoHist{}
 	// 逐条解析
 	for rows.Next() {
-		// fmt.Sprintf("SearchNormalUseridByNickname", ...)
 		a.Db.ScanRows(rows, &item)
-		uidList = append(uidList, item.UserId)
+		list = append(list, item)
 	}
 
 	return list, nil

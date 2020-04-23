@@ -7,13 +7,13 @@ import (
 	"github.com/lilien1010/tx-fudao-crawler/common"
 	"github.com/lilien1010/tx-fudao-crawler/model"
 	//"io/ioutil"
-	"log"
-	"strings"
-	"time"
-	//"net/http"
 	"bytes"
+	"log"
+	"net/http"
 	"runtime"
+	"strings"
 	"sync/atomic"
+	"time"
 	//"sync"
 )
 
@@ -54,6 +54,9 @@ func Start(SubjectId int, GradeIds []int) (err error) {
 				infoLog.Printf("StartGatherCountInfo() simplejson %s,%s new json fail err=%v", reqUrl, string(Content), err)
 				continue
 			}
+
+			infoLog.Printf("StartGatherCountInfo reqUrl=%s,Content=%s", reqUrl, Content)
+
 			resultCode := rootObj.Get("result").Get("retcode").MustInt(-1)
 			if resultCode != 0 {
 				infoLog.Printf("StartGatherCountInfo() simplejson %s,%s,result code error", reqUrl, string(Content), err)
@@ -107,6 +110,8 @@ func GatherCountInfo(SubjectId int, Grade int, countInfo *model.CountInfoData, I
 
 	countInfo.CourseCount += Info.Get("spe_course_list").Get("total").MustInt()
 
+	infoLog.Printf("StartGatherCountInfo() GatherCountInfo   SubjectId=%d countInfo=%v", SubjectId, countInfo)
+
 	return err
 
 }
@@ -134,7 +139,15 @@ func GatherCourseDetail(SubjectId int, Grade int, Info *simplejson.Json) (err er
 		start := "window.__initialState={"
 		end := ";</script>"
 		index1 := bytes.IndexAny(Content, (start))
+
+		if index1 < 0 {
+			infoLog.Printf("GatherCourseDetail reqUrl=%s,can't found data", reqUrl)
+			continue
+		}
+
 		index2 := bytes.IndexAny(Content[index1:], end)
+
+		infoLog.Println("GatherCourseDetail() simplejson ", reqUrl, index1, index2, string(Content))
 
 		jsonContent := Content[index1+len(start) : index1+index2]
 		rootObj, err := simplejson.NewJson(jsonContent)
@@ -230,6 +243,10 @@ func GetTeacher(TeInfo *simplejson.Json) string {
 	return strings.Join(teach, ",")
 }
 
+type ReqParam struct {
+	Subject int `json:"subject" form:"subject"`
+}
+
 func main() {
 
 	runtime.GOMAXPROCS(runtime.NumCPU())
@@ -247,12 +264,13 @@ func main() {
 
 	r := gin.Default()
 
-	r.POST("/status", func(c *gin.Context) {
+	r.GET("/status", func(c *gin.Context) {
 		c.String(200, "ok")
 	})
 
 	reqFudaoHeader = map[string]string{
-		"referer": "https://fudao.qq.com/subjec",
+		"referer":    "https://fudao.qq.com/subjec",
+		"user-agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 10_3_1 like Mac OS X) AppleWebKit/603.1.30 (KHTML, like Gecko) Version/10.0 Mobile/14E304 Safari/602.1",
 	}
 	/*
 		6001：语文
@@ -270,21 +288,52 @@ func main() {
 	allSubject := []int{6001, 6002, 6003, 6004, 6005, 6006, 6007, 6008, 6009, 6010, 7057, 7058}
 
 	//从幼儿园到高中
-	allGrade := []int{8001, 8002, 8003, 6001, 6002, 6003, 7001, 7002, 7003, 7004, 7005, 7006}
+	allGrade := []int{6001, 6002, 6003, 7001, 7002, 7003, 7004, 7005, 7006, 8001, 8002, 8003}
 
 	//每天load一次
 	go func() {
 		for {
+
+			time.Sleep(24 * time.Hour)
+
 			for _, v := range allSubject {
 				Start(v, allGrade)
 			}
-			time.Sleep(24 * time.Hour)
 		}
 	}()
 
+	//测试入口
+	r.GET("/gather", func(c *gin.Context) {
+		u := ReqParam{}
+		err := c.ShouldBind(&u)
+		if err != nil {
+			c.JSON(http.StatusOK, gin.H{
+				"code":    500,
+				"message": "param error " + err.Error(),
+			})
+			return
+		}
+
+		err = Start(u.Subject, allGrade)
+
+		if err != nil {
+			c.JSON(http.StatusOK, gin.H{
+				"code":    500,
+				"message": "param error " + err.Error(),
+			})
+			return
+		} else {
+			c.JSON(http.StatusOK, gin.H{
+				"code":    200,
+				"message": "ok",
+			})
+		}
+
+	})
+
 	//后期提供HTTP的同步指令
 	server_ip := cfg.Section("LOCAL_SERVER").Key("bind_ip").MustString("0.0.0.0")
-	listen_port := cfg.Section("LOCAL_SERVER").Key("bind_port").MustString("8021")
+	listen_port := cfg.Section("LOCAL_SERVER").Key("bind_port").MustString("8089")
 
 	r.Run(server_ip + ":" + listen_port)
 

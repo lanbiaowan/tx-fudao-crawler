@@ -18,6 +18,8 @@
 
 ### 2. 方案设计
 
+![](static/process.png)
+
 目录服务说明：
 ####    1、crawler 爬虫服务，抓取数据 并把数据导入到Redis 队列，队列名称，fudao_history。
 ####    2、fudao_consumer 数据消费者服务。从redis队列消费数据 写入到Redis。
@@ -90,5 +92,5 @@ curl -H"referer: https://fudao.qq.com/subjec" "https://fudao.qq.com/cgi-proxy/co
 ### 3. 安装配置说明
 
 ```shell
-
+./crawler/crawler -c./crawler/crawler.conf
 ```
