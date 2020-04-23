@@ -123,6 +123,9 @@ func GatherCourseDetail(SubjectId int, Grade int, Info *simplejson.Json) (err er
 
 	totalArrayCnt := len(sysInfo.MustArray())
 
+	start := []byte("window.__initialState={\"")
+	end := []byte(";</script>")
+
 	//系统课程
 	for i := 0; i < totalArrayCnt; i++ {
 		packageId := sysInfo.GetIndex(i).Get("subject_package_id").MustString("")
@@ -136,28 +139,49 @@ func GatherCourseDetail(SubjectId int, Grade int, Info *simplejson.Json) (err er
 			continue
 		}
 
-		start := "window.__initialState={"
-		end := ";</script>"
-		index1 := bytes.IndexAny(Content, (start))
+		var courses *simplejson.Json
+		index1 := bytes.Index(Content, (start))
 
-		if index1 < 0 {
-			infoLog.Printf("GatherCourseDetail reqUrl=%s,can't found data", reqUrl)
-			continue
+		if index1 > 0 {
+
+			index2 := bytes.Index(Content[index1:], end)
+
+			if index2 < 0 {
+				infoLog.Printf("GatherCourseDetail reqUrl=%s,can't found end data", reqUrl)
+				continue
+			}
+
+			infoLog.Println("GatherCourseDetail() simplejson ", reqUrl, index1, index2, string(Content))
+
+			jsonContent := Content[index1+len(start) : index1+index2]
+			rootObj, err := simplejson.NewJson(jsonContent)
+			if err != nil {
+				infoLog.Printf("GatherCourseDetail() simplejson %s,%s new json fail err=%v", reqUrl, string(jsonContent), err)
+				continue
+			}
+
+			//解析 __initialState 之后的JS 对象。得到 里面的。sysPkgData
+			courses = rootObj.Get("sysPkgData").Get("courses")
+		} else {
+
+			tmpUrl := fmt.Sprintf("https://fudao.qq.com/cgi-proxy/course/get_course_package_info?client=4&platform=3&version=30&subject_package_id=%s&bkn=980336541&t=0.848500267879549", packageId)
+
+			Content, err := common.HttpGet(tmpUrl, 20, reqFudaoHeader)
+
+			if err != nil {
+				infoLog.Printf("GatherCourseDetail reqUrl=%s,err=%v", tmpUrl, err)
+				continue
+			}
+
+			rootObj, err := simplejson.NewJson(Content)
+			if err != nil {
+				infoLog.Printf("GatherCourseDetail() simplejson %s,%s new json fail err=%v", tmpUrl, string(Content), err)
+				continue
+			}
+
+			courses = rootObj.Get("result").Get("courses")
+
 		}
-
-		index2 := bytes.IndexAny(Content[index1:], end)
-
-		infoLog.Println("GatherCourseDetail() simplejson ", reqUrl, index1, index2, string(Content))
-
-		jsonContent := Content[index1+len(start) : index1+index2]
-		rootObj, err := simplejson.NewJson(jsonContent)
-		if err != nil {
-			infoLog.Printf("GatherCourseDetail() simplejson %s,%s new json fail err=%v", reqUrl, string(jsonContent), err)
-			continue
-		}
-
-		//解析 __initialState 之后的JS 对象。得到 里面的。sysPkgData
-		courses := rootObj.Get("sysPkgData").Get("courses")
 
 		HisData := ParseCourseListToHistData(Grade, courses)
 
@@ -188,6 +212,7 @@ func GatherCourseDetail(SubjectId int, Grade int, Info *simplejson.Json) (err er
 	//把单科的数量信息入库
 	listSize, err := RedisApi.PushTask(RedisQueue,
 		&model.QueueTaskEvent{
+
 			Id:         newTaskId,
 			CreateTime: uint32(time.Now().Unix()),
 			Type:       "history_data",
@@ -270,7 +295,8 @@ func main() {
 
 	reqFudaoHeader = map[string]string{
 		"referer":    "https://fudao.qq.com/subjec",
-		"user-agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 10_3_1 like Mac OS X) AppleWebKit/603.1.30 (KHTML, like Gecko) Version/10.0 Mobile/14E304 Safari/602.1",
+		"user-agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/80.0.3987.163 Safari/537.36",
+		//"user-agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 10_3_1 like Mac OS X) AppleWebKit/603.1.30 (KHTML, like Gecko) Version/10.0 Mobile/14E304 Safari/602.1",
 	}
 	/*
 		6001：语文
