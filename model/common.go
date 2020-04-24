@@ -4,7 +4,7 @@ type HistoryData struct {
 	CourseId   int    `json:"course_id"`
 	DateTime   string `json:"date_time"`
 	Subject    int    `json:"subject"`
-	Grade      int    `json:"grade"`
+	Grade      string `json:"grade"`
 	Price      int    `json:"price"` //整数，要除以100
 	Title      string `json:"title"`
 	Teacher    string `json:"teacher"`
@@ -15,7 +15,6 @@ type HistoryData struct {
 type CountInfoData struct {
 	DateTime    string `json:"date_time"`
 	Subject     int    `json:"subject"`
-	SysCount    int    `json:"sys_count"`
 	CourseCount int    `json:"course_count"`
 	CreateTime  string `json:"create_time"`
 }

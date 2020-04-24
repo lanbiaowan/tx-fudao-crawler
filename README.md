@@ -68,9 +68,8 @@ curl -H"referer: https://fudao.qq.com/subjec" "https://fudao.qq.com/cgi-proxy/co
 |:----|:----|:----|
 | **id**  | bigint   | 主键ID   |
 | **date_time**  | date   | 每日的数量   |
-| **subject**  | int   | 学科   |
-| **sys_count**  | int   | 系统课数量   |
-| **course_count**  | int   | 专题课数量   |
+| **subject**  | int   | 学科   | 
+| **course_count**  | int   | 课数量   |
 | **create_time**  | datetime   | 创建时间   |
 
 学科详情：（id为自增主键，date_time+course_id）
@@ -83,7 +82,7 @@ curl -H"referer: https://fudao.qq.com/subjec" "https://fudao.qq.com/cgi-proxy/co
 | **grade**  | int   | 年纪   |
 | **title**  | string   | 课程名称   |
 | **price**  | decailmal   | 价格   |
-| **teacher**  | string   | 老是名称   |
+| **teacher**  | string   | 老师名称   |
 | **detail**  | JSON   | 课程详情原生数据   |
 | **create_time**  | datetime   | 创建时间   |
 

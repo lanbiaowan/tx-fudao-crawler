@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"strconv"
 	"strings"
 
 	simplejson "github.com/bitly/go-simplejson"
@@ -39,9 +38,9 @@ func SetLogger(p *log.Logger) {
 }
 
 //得到课程详情
-func GatherCourseDetailByCid(SubjectId int, Cid string) (data *model.HistoryData, err error) {
+func GatherCourseDetailByCid(SubjectId int, Cid int) (data *model.HistoryData, err error) {
 
-	reqUrl := fmt.Sprintf("https://fudao.qq.com/pc/course.html?course_id=%s", Cid)
+	reqUrl := fmt.Sprintf("https://fudao.qq.com/pc/course.html?course_id=%d", Cid)
 
 	if err != nil {
 		infoLog.Printf("GatherCourseDetailByCid reqUrl=%s,err=%v", reqUrl, err)
@@ -69,7 +68,7 @@ func GatherCourseDetailByCid(SubjectId int, Cid string) (data *model.HistoryData
 		return nil, errors.New("end nil")
 	}
 
-	jsonContent := Content[startIndex-2+len(FUDAO_COUSR_START) : endIndex+startIndex-1]
+	jsonContent := Content[startIndex-2+len(FUDAO_COUSR_START) : endIndex+startIndex-2]
 
 	curCourse, err := simplejson.NewJson(jsonContent)
 	if err != nil {
@@ -77,17 +76,11 @@ func GatherCourseDetailByCid(SubjectId int, Cid string) (data *model.HistoryData
 		return nil, err
 	}
 
-	gradeStr := curCourse.Get("grade").MustString("")
-	Grade := 0
-	if len(gradeStr) > 0 {
-		Grade, _ = strconv.Atoi(gradeStr)
-	}
-
 	data = &model.HistoryData{
 		CourseId:   curCourse.Get("cid").MustInt(0),
 		DateTime:   time.Now().Format("2006-01-02"),
 		Subject:    curCourse.Get("subject").MustInt(0),
-		Grade:      Grade,
+		Grade:      curCourse.Get("grade").MustString(""),
 		Price:      curCourse.Get("price").MustInt(0),
 		Title:      curCourse.Get("name").MustString(""),
 		Teacher:    GetTeacher(curCourse.Get("teacher")),

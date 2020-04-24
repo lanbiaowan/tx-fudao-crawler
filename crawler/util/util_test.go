@@ -7,7 +7,7 @@ import (
 //测试课程详情
 func TestGatherCourseDetailByCid(t *testing.T) {
 
-	data, err := GatherCourseDetailByCid(132439, "132439")
+	data, err := GatherCourseDetailByCid(171546, "171546")
 
 	if err != nil {
 		t.Fatal("err=", err)

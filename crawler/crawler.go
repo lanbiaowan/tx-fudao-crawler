@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"strconv"
 
 	simplejson "github.com/bitly/go-simplejson"
 	"github.com/gin-gonic/gin"
@@ -37,11 +38,7 @@ func Start(SubjectId int, GradeIds []int) (err error) {
 	//暂时没考虑分页
 	UrlTmp := "https://fudao.qq.com/cgi-proxy/course/discover_subject?client=4&platform=3&version=30&grade=%d&subject=%d&showid=0&page=1&size=10&t=0.4440"
 
-	countInfo := model.CountInfoData{
-		Subject:    SubjectId,
-		DateTime:   time.Now().Format("2006-01-02"),
-		CreateTime: time.Now().Format("2006-01-02 15:04:05"),
-	}
+	allCourseIdMap := make(map[int]*simplejson.Json, 128)
 
 	for _, grade := range GradeIds {
 		reqUrl := fmt.Sprintf(UrlTmp, grade, SubjectId)
@@ -50,38 +47,44 @@ func Start(SubjectId int, GradeIds []int) (err error) {
 
 		if err != nil {
 			infoLog.Printf("StartGatherCountInfo reqUrl=%s,err=%v", reqUrl, err)
-		} else {
-
-			rootObj, err := simplejson.NewJson(Content)
-			if err != nil {
-				infoLog.Printf("StartGatherCountInfo() simplejson %s,%s new json fail err=%v", reqUrl, string(Content), err)
-				continue
-			}
-
-			infoLog.Printf("StartGatherCountInfo reqUrl=%s,Content=%s", reqUrl, Content)
-
-			resultCode := rootObj.Get("result").Get("retcode").MustInt(-1)
-			if resultCode != 0 {
-				infoLog.Printf("StartGatherCountInfo() simplejson %s,%s,result code error", reqUrl, string(Content), err)
-				continue
-			}
-
-			errSys := GatherCountInfo(SubjectId, grade, &countInfo, rootObj.Get("result"))
-			if errSys != nil {
-				infoLog.Printf("StartGatherCountInfo() GatherCountInfo fail %s errSys=%v", reqUrl, errSys)
-				continue
-			}
-
-			errSpe := GatherCourseDetail(SubjectId, grade, rootObj.Get("result"))
-			if errSpe != nil {
-				infoLog.Printf("StartGatherCountInfo() GatherCourseDetail fail %s errSys=%v", reqUrl, errSys)
-				continue
-			}
+			continue
 		}
+
+		rootObj, err := simplejson.NewJson(Content)
+		if err != nil {
+			infoLog.Printf("StartGatherCountInfo() simplejson %s,%s new json fail err=%v", reqUrl, string(Content), err)
+			continue
+		}
+
+		infoLog.Printf("StartGatherCountInfo reqUrl=%s,Content=%s", reqUrl, Content)
+
+		resultCode := rootObj.Get("result").Get("retcode").MustInt(-1)
+		if resultCode != 0 {
+			infoLog.Printf("StartGatherCountInfo() simplejson %s,%s,result code error", reqUrl, string(Content), err)
+			continue
+		}
+
+		//收集课程详情到map
+		errSpe := GatherCourseDetail(SubjectId, &allCourseIdMap, rootObj.Get("result"))
+		if errSpe != nil {
+			infoLog.Printf("StartGatherCountInfo() GatherCourseDetail fail %s errSys=%v", reqUrl, errSpe)
+			continue
+		}
+
+		//把课程入队列
+		storeDetail(SubjectId, grade, &allCourseIdMap)
 	}
 
 	//任务ID
 	newTaskId := atomic.AddUint32(&TaskId, 1)
+
+	countInfo := model.CountInfoData{
+		Subject:    SubjectId,
+		DateTime:   time.Now().Format("2006-01-02"),
+		CreateTime: time.Now().Format("2006-01-02 15:04:05"),
+	}
+
+	countInfo.CourseCount = len(allCourseIdMap)
 
 	//把单科的数量信息入库
 	listSize, err := RedisApi.PushTask(RedisQueue,
@@ -98,29 +101,8 @@ func Start(SubjectId int, GradeIds []int) (err error) {
 	return err
 }
 
-//课程课数量统计
-func GatherCountInfo(SubjectId int, Grade int, countInfo *model.CountInfoData, Info *simplejson.Json) (err error) {
-
-	sysInfo := Info.Get("sys_course_pkg_list")
-
-	totalArrayCnt := len(sysInfo.MustArray())
-
-	for i := 0; i < totalArrayCnt; i++ {
-		cidList := sysInfo.GetIndex(i).Get("cid_list").MustString("")
-		//课程包 有多少课程，在这个字段就有多个ID
-		countInfo.SysCount += strings.Count(cidList, ",") + 1
-	}
-
-	countInfo.CourseCount += Info.Get("spe_course_list").Get("total").MustInt()
-
-	infoLog.Printf("StartGatherCountInfo() GatherCountInfo   SubjectId=%d countInfo=%v", SubjectId, countInfo)
-
-	return err
-
-}
-
 //把课程详情再get一次，得到课程详情
-func GatherCourseDetail(SubjectId int, Grade int, Info *simplejson.Json) (err error) {
+func GatherCourseDetail(SubjectId int, allCourseIdMap *map[int]*simplejson.Json, Info *simplejson.Json) (err error) {
 
 	sysInfo := Info.Get("sys_course_pkg_list")
 
@@ -132,26 +114,11 @@ func GatherCourseDetail(SubjectId int, Grade int, Info *simplejson.Json) (err er
 
 		cisList := strings.Split(cidListStr, ",")
 
-		for _, cid := range cisList {
-			courseData, err := util.GatherCourseDetailByCid(SubjectId, cid)
-
-			if err != nil {
-				continue
+		for _, cidStr := range cisList {
+			cidId, _ := strconv.Atoi(cidStr)
+			if cidId > 0 {
+				(*allCourseIdMap)[cidId] = nil
 			}
-			//任务ID
-			newTaskId := atomic.AddUint32(&TaskId, 1)
-
-			//把单科的数量信息入库
-			listSize, err := RedisApi.PushTask(RedisQueue,
-				&model.QueueTaskEvent{
-					Id:         newTaskId,
-					CreateTime: uint32(time.Now().Unix()),
-					Type:       "history_data",
-					HisData:    []model.HistoryData{*courseData},
-				})
-
-			infoLog.Printf("GatherCourseDetail()  sys_course_pkg_list done SubjectId=%d newTaskId=%d listSize=%d courseData=%#v,err=%v",
-				SubjectId, newTaskId, listSize, courseData, err)
 		}
 
 	}
@@ -159,52 +126,71 @@ func GatherCourseDetail(SubjectId int, Grade int, Info *simplejson.Json) (err er
 	//专题课 直接取
 	courses := Info.Get("spe_course_list").Get("data")
 
-	HisData := ParseCourseListToHistData(Grade, courses)
+	StoreSysCourseIntoMap(SubjectId, allCourseIdMap, courses)
 
-	if len(HisData) > 0 {
+	return err
+}
+
+func storeDetail(SubjectId int, Grade int, allCourseIdMap *map[int]*simplejson.Json) (err error) {
+
+	var courseData *model.HistoryData
+	for cid, curCourse := range *allCourseIdMap {
+
+		//专题课，已经有了JSON信息
+		if curCourse != nil {
+			strMsgBody, _ := curCourse.MarshalJSON()
+
+			courseData = &model.HistoryData{
+				CourseId:   curCourse.Get("cid").MustInt(0),
+				DateTime:   time.Now().Format("2006-01-02"),
+				Subject:    curCourse.Get("subject").MustInt(0),
+				Grade:      fmt.Sprintf("%d", Grade),
+				Price:      curCourse.Get("af_amount").MustInt(0),
+				Title:      curCourse.Get("name").MustString(""),
+				Teacher:    util.GetTeacher(curCourse.Get("te_list")),
+				Detail:     string(strMsgBody),
+				CreateTime: time.Now().Format("2006-01-02 15:04:05"),
+			}
+
+		} else {
+			courseData, err = util.GatherCourseDetailByCid(SubjectId, cid)
+		}
+
+		if err != nil {
+			continue
+		}
 		//任务ID
 		newTaskId := atomic.AddUint32(&TaskId, 1)
 
 		//把单科的数量信息入库
 		listSize, err := RedisApi.PushTask(RedisQueue,
 			&model.QueueTaskEvent{
-
 				Id:         newTaskId,
 				CreateTime: uint32(time.Now().Unix()),
 				Type:       "history_data",
-				HisData:    HisData,
+				HisData:    []model.HistoryData{*courseData},
 			})
-		infoLog.Printf("GatherCourseDetail()  spe_course_list done SubjectId=%d newTaskId=%d listSize=%d HisData=%v,err=%v",
-			SubjectId, newTaskId, listSize, HisData, err)
+
+		infoLog.Printf("storeDetail()  sys_course_pkg_list done SubjectId=%d newTaskId=%d listSize=%d courseData=%#v,err=%v",
+			SubjectId, newTaskId, listSize, courseData, err)
 	}
 
-	return err
+	return nil
 }
 
-func ParseCourseListToHistData(Grade int, CourseListInfo *simplejson.Json) []model.HistoryData {
+//专题课直接可以获取到，用json 对象装起来
+func StoreSysCourseIntoMap(SubjectId int, allCourseIdMap *map[int]*simplejson.Json, CourseListInfo *simplejson.Json) []model.HistoryData {
 	coursesCnt := len(CourseListInfo.MustArray())
 
 	HisData := []model.HistoryData{}
 
 	for i := 0; i < coursesCnt; i++ {
-
 		curCourse := CourseListInfo.GetIndex(i)
 
-		strMsgBody, _ := curCourse.MarshalJSON()
-
-		data := model.HistoryData{
-			CourseId:   curCourse.Get("cid").MustInt(0),
-			DateTime:   time.Now().Format("2006-01-02"),
-			Subject:    curCourse.Get("subject").MustInt(0),
-			Grade:      Grade,
-			Price:      curCourse.Get("af_amount").MustInt(0),
-			Title:      curCourse.Get("name").MustString(""),
-			Teacher:    util.GetTeacher(curCourse.Get("te_list")),
-			Detail:     string(strMsgBody),
-			CreateTime: time.Now().Format("2006-01-02 15:04:05"),
+		Cid := curCourse.Get("cid").MustInt(0)
+		if Cid > 0 {
+			(*allCourseIdMap)[Cid] = curCourse
 		}
-
-		HisData = append(HisData, data)
 	}
 
 	return HisData

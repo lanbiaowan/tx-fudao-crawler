@@ -42,7 +42,7 @@ func fudaoWorker(message *string) (code uint32, err error) {
 	}
 
 	if err != nil {
-		infoLog.Printf("StartFunc() fail task=%v,err=%v",
+		infoLog.Printf("StartFunc() fail task=%#v,err=%v",
 			task, err)
 	}
 
@@ -55,7 +55,6 @@ func HandlerForCountInfo(CountInfo *model.CountInfoData) (err error) {
 	dbData := &model.CountInfoHist{
 		DateTime:    CountInfo.DateTime,
 		Subject:     CountInfo.Subject,
-		SysCount:    CountInfo.SysCount,
 		CourseCount: CountInfo.CourseCount,
 		CreateTime:  CountInfo.CreateTime,
 	}
