@@ -2,12 +2,15 @@ package main
 
 import (
 	"fmt"
+
 	simplejson "github.com/bitly/go-simplejson"
 	"github.com/gin-gonic/gin"
 	"github.com/lilien1010/tx-fudao-crawler/common"
+	"github.com/lilien1010/tx-fudao-crawler/crawler/util"
 	"github.com/lilien1010/tx-fudao-crawler/model"
+
 	//"io/ioutil"
-	"bytes"
+
 	"log"
 	"net/http"
 	"runtime"
@@ -123,104 +126,57 @@ func GatherCourseDetail(SubjectId int, Grade int, Info *simplejson.Json) (err er
 
 	totalArrayCnt := len(sysInfo.MustArray())
 
-	start := []byte("window.__initialState={\"")
-	end := []byte(";</script>")
-
 	//系统课程
 	for i := 0; i < totalArrayCnt; i++ {
-		packageId := sysInfo.GetIndex(i).Get("subject_package_id").MustString("")
+		cidListStr := sysInfo.GetIndex(i).Get("cid_list").MustString("")
 
-		reqUrl := fmt.Sprintf("https://fudao.qq.com/grade/%v/subject/%v/subject_system/%s", Grade, SubjectId, packageId)
+		cisList := strings.Split(cidListStr, ",")
 
-		Content, err := common.HttpGet(reqUrl, 20, reqFudaoHeader)
+		for _, cid := range cisList {
+			courseData, err := util.GatherCourseDetailByCid(SubjectId, cid)
 
-		if err != nil {
-			infoLog.Printf("GatherCourseDetail reqUrl=%s,err=%v", reqUrl, err)
-			continue
+			if err != nil {
+				continue
+			}
+			//任务ID
+			newTaskId := atomic.AddUint32(&TaskId, 1)
+
+			//把单科的数量信息入库
+			listSize, err := RedisApi.PushTask(RedisQueue,
+				&model.QueueTaskEvent{
+					Id:         newTaskId,
+					CreateTime: uint32(time.Now().Unix()),
+					Type:       "history_data",
+					HisData:    []model.HistoryData{*courseData},
+				})
+
+			infoLog.Printf("GatherCourseDetail()  sys_course_pkg_list done SubjectId=%d newTaskId=%d listSize=%d courseData=%#v,err=%v",
+				SubjectId, newTaskId, listSize, courseData, err)
 		}
 
-		var courses *simplejson.Json
-		index1 := bytes.Index(Content, (start))
+	}
 
-		if index1 > 0 {
+	//专题课 直接取
+	courses := Info.Get("spe_course_list").Get("data")
 
-			index2 := bytes.Index(Content[index1:], end)
+	HisData := ParseCourseListToHistData(Grade, courses)
 
-			if index2 < 0 {
-				infoLog.Printf("GatherCourseDetail reqUrl=%s,can't found end data", reqUrl)
-				continue
-			}
-
-			infoLog.Println("GatherCourseDetail() simplejson ", reqUrl, index1, index2, string(Content))
-
-			jsonContent := Content[index1+len(start) : index1+index2]
-			rootObj, err := simplejson.NewJson(jsonContent)
-			if err != nil {
-				infoLog.Printf("GatherCourseDetail() simplejson %s,%s new json fail err=%v", reqUrl, string(jsonContent), err)
-				continue
-			}
-
-			//解析 __initialState 之后的JS 对象。得到 里面的。sysPkgData
-			courses = rootObj.Get("sysPkgData").Get("courses")
-		} else {
-
-			tmpUrl := fmt.Sprintf("https://fudao.qq.com/cgi-proxy/course/get_course_package_info?client=4&platform=3&version=30&subject_package_id=%s&bkn=980336541&t=0.848500267879549", packageId)
-
-			Content, err := common.HttpGet(tmpUrl, 20, reqFudaoHeader)
-
-			if err != nil {
-				infoLog.Printf("GatherCourseDetail reqUrl=%s,err=%v", tmpUrl, err)
-				continue
-			}
-
-			rootObj, err := simplejson.NewJson(Content)
-			if err != nil {
-				infoLog.Printf("GatherCourseDetail() simplejson %s,%s new json fail err=%v", tmpUrl, string(Content), err)
-				continue
-			}
-
-			courses = rootObj.Get("result").Get("courses")
-
-		}
-
-		HisData := ParseCourseListToHistData(Grade, courses)
-
+	if len(HisData) > 0 {
 		//任务ID
 		newTaskId := atomic.AddUint32(&TaskId, 1)
 
 		//把单科的数量信息入库
 		listSize, err := RedisApi.PushTask(RedisQueue,
 			&model.QueueTaskEvent{
+
 				Id:         newTaskId,
 				CreateTime: uint32(time.Now().Unix()),
 				Type:       "history_data",
 				HisData:    HisData,
 			})
-
-		infoLog.Printf("GatherCourseDetail()  sys_course_pkg_list done SubjectId=%d newTaskId=%d listSize=%d countInfo=%v,err=%v",
+		infoLog.Printf("GatherCourseDetail()  spe_course_list done SubjectId=%d newTaskId=%d listSize=%d HisData=%v,err=%v",
 			SubjectId, newTaskId, listSize, HisData, err)
 	}
-
-	//专题课 直接取到
-	courses := Info.Get("spe_course_list").Get("data")
-
-	HisData := ParseCourseListToHistData(Grade, courses)
-
-	//任务ID
-	newTaskId := atomic.AddUint32(&TaskId, 1)
-
-	//把单科的数量信息入库
-	listSize, err := RedisApi.PushTask(RedisQueue,
-		&model.QueueTaskEvent{
-
-			Id:         newTaskId,
-			CreateTime: uint32(time.Now().Unix()),
-			Type:       "history_data",
-			HisData:    HisData,
-		})
-
-	infoLog.Printf("GatherCourseDetail()  spe_course_list done SubjectId=%d newTaskId=%d listSize=%d countInfo=%v,err=%v",
-		SubjectId, newTaskId, listSize, HisData, err)
 
 	return err
 }
@@ -243,7 +199,7 @@ func ParseCourseListToHistData(Grade int, CourseListInfo *simplejson.Json) []mod
 			Grade:      Grade,
 			Price:      curCourse.Get("af_amount").MustInt(0),
 			Title:      curCourse.Get("name").MustString(""),
-			Teacher:    GetTeacher(curCourse.Get("te_list")),
+			Teacher:    util.GetTeacher(curCourse.Get("te_list")),
 			Detail:     string(strMsgBody),
 			CreateTime: time.Now().Format("2006-01-02 15:04:05"),
 		}
@@ -253,19 +209,6 @@ func ParseCourseListToHistData(Grade int, CourseListInfo *simplejson.Json) []mod
 
 	return HisData
 
-}
-
-func GetTeacher(TeInfo *simplejson.Json) string {
-	TeachArray := TeInfo.MustArray()
-	teach := []string{}
-	for i := 0; i < len(TeachArray); i++ {
-
-		tmp := TeInfo.GetIndex(i).Get("name").MustString("")
-		teach = append(teach, tmp)
-
-	}
-
-	return strings.Join(teach, ",")
 }
 
 type ReqParam struct {
@@ -280,6 +223,8 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
+
+	util.SetLogger(infoLog)
 
 	RedisHost := cfg.Section("REDIS").Key("host").MustString("127.0.0.1:6379")
 	RedisPasswd := cfg.Section("REDIS").Key("passwd").MustString("")

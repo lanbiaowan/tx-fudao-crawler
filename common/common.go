@@ -9,11 +9,13 @@ import (
 	"github.com/jessevdk/go-flags"
 	"github.com/jinzhu/gorm"
 	_ "github.com/jinzhu/gorm/dialects/mysql"
+
 	//"go.uber.org/zap"
 	//"encoding/json"
-	"gopkg.in/ini.v1"
 	"io/ioutil"
 	"net/http"
+
+	"gopkg.in/ini.v1"
 	//"time"
 )
 
@@ -65,15 +67,15 @@ func InitLog(options *Options, infoLog **log.Logger) (conf *ini.File, err error)
 }
 
 //gorm db
-func InitMySqlGormSection(cfg *ini.File, infoLog *log.Logger, secName string, OpenCount int, OdleCount int) (*gorm.DB, error) {
+func InitMysql(cfg *ini.File, infoLog *log.Logger, secName string, OpenCount int, OdleCount int) (*gorm.DB, error) {
 
 	infoLog.Printf("InitMySqlGormSection() name=%s,Idle=%d,Open=%d start", secName, OdleCount, OpenCount)
 
 	// init mysql
 	mysqlHost := cfg.Section(secName).Key("mysql_host").MustString("127.0.0.1")
-	mysqlUser := cfg.Section(secName).Key("mysql_user").MustString("IMServer")
+	mysqlUser := cfg.Section(secName).Key("mysql_user").MustString("root")
 	mysqlPasswd := cfg.Section(secName).Key("mysql_passwd").MustString("hello")
-	mysqlDbName := cfg.Section(secName).Key("mysql_db").MustString("HT_IMDB")
+	mysqlDbName := cfg.Section(secName).Key("mysql_db").MustString("test")
 	mysqlPort := cfg.Section(secName).Key("mysql_port").MustString("3306")
 
 	mydb, err := gorm.Open("mysql", mysqlUser+":"+mysqlPasswd+"@"+"tcp("+mysqlHost+":"+mysqlPort+")/"+mysqlDbName+"?charset=utf8mb4&timeout=10s")

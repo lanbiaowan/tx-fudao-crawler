@@ -6,12 +6,14 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/lilien1010/tx-fudao-crawler/common"
 	"github.com/lilien1010/tx-fudao-crawler/model"
+
 	//"io/ioutil"
 	"encoding/json"
 	"log"
 
-	"github.com/jinzhu/gorm"
 	"runtime"
+
+	"github.com/jinzhu/gorm"
 	//"sync"
 )
 
@@ -87,7 +89,7 @@ func main() {
 
 	RedisApi = common.NewRedisApi(RedisHost, 10000, RedisPasswd)
 
-	Db, err = common.InitMySqlGormSection(cfg, infoLog, "MYSQL", 100, 2)
+	Db, err = common.InitMysql(cfg, infoLog, "MYSQL", 100, 2)
 	if err != nil {
 		log.Fatal(err)
 	}

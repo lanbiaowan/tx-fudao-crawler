@@ -2,8 +2,9 @@ package model
 
 import (
 	"fmt"
-	"github.com/jinzhu/gorm"
 	"strings"
+
+	"github.com/jinzhu/gorm"
 )
 
 type CourseHistory struct {
@@ -53,7 +54,7 @@ func (a *CourseHistoryModel) BulkUpsert(data []HistoryData) error {
 		param = append(param, d.Detail)
 		param = append(param, d.CreateTime)
 	}
-	stmt := fmt.Sprintf("INSERT INTO fudao_course_history(date_time,subject,price,title,teacher,detail,create_time) VALUES %s",
+	stmt := fmt.Sprintf("INSERT INTO fudao_course_history(date_time,subject,price,title,teacher,detail,create_time) VALUES %s ON DUPLICATE KEY UPDATE price=VALUE(price)",
 		strings.Join(str, ","))
 	return a.Db.Exec(stmt, param...).Error
 }

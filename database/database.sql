@@ -1,5 +1,5 @@
 
-CREATE TABLE `fudao_count_info` (
+CREATE TABLE `fudao_count_hist` (
   `id` bigint(10) unsigned NOT NULL AUTO_INCREMENT,
   `date_time` date NOT NULL DEFAULT '2000-01-01' COMMENT '用户id',
   `subject` int(32) NOT NULL DEFAULT '0' COMMENT '科目',
@@ -13,7 +13,7 @@ CREATE TABLE `fudao_count_info` (
 
 
 
-CREATE TABLE `fudao_source_info` (
+CREATE TABLE `fudao_course_history` (
   `id` bigint(10) unsigned NOT NULL AUTO_INCREMENT,
   `date_time` date NOT NULL DEFAULT '2000-01-01' COMMENT '每日详情',
   `course_id` int(32) NOT NULL DEFAULT '0' COMMENT '课程id',
