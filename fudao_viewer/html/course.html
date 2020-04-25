@@ -17,24 +17,24 @@
          <th>日期</th>
          <th>老师</th>
          <th>价格</th>
-         <th>名称</th>
+         <th>名称</th> 
          <th>采集时间</th>
       </th>
       </tr>
    </thead>
    <tbody> 
         <tr>
-            <td>{{ .DateTime}}</td>
+            <td>{{ .courseDetail.DateTime}}</td>
             <td>{{ .courseDetail.Teacher}}</td>
-            <td>{{ .courseDetail.Price}}</td>
-            <td>{{ .courseDetail.Title}}</td> 
+            <td class="price">{{ .courseDetail.Price}}</td>
+            <td style="width: 20%;">{{ .courseDetail.Title}}</td>
             <td>{{ .courseDetail.CreateTime}}</td>
          </tr>
    </tbody>
 
 </table>
 
-   详情数据：
+   JSON详情数据：
    <div id="json"></div>
    <div id="json-collasped"></div>
 </body>
@@ -46,6 +46,8 @@
      $("#json").JSONView(json);
      // with options
      $("#json-collasped").JSONView(json, { collapsed: true });
+
+     $('.price').html(parseInt($('.price').text())/100)
    });
 
 </script>

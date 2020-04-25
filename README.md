@@ -106,4 +106,4 @@ sql文件记录在 database/database.sql
 http://127.0.0.1:8092/index
 
 ![](static/demo.jpg)
-![](static/demo2.jpg)
+![](static/demo2.png)
