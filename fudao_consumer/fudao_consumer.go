@@ -35,15 +35,18 @@ func fudaoWorker(message *string) (code uint32, err error) {
 
 	switch task.Type {
 
-	case "count_data":
+	case model.TASK_TYPE_COUNT_DATA:
 		err = HandlerForCountInfo(&task.CountData)
-	case "history_data":
+	case model.TASK_TYPE_HISTORY_DATA:
 		err = HandlerForHisData(task.HisData)
 	}
 
 	if err != nil {
 		infoLog.Printf("StartFunc() fail task=%#v,err=%v",
 			task, err)
+	} else {
+		infoLog.Printf("StartFunc() fail taskId=%d ok",
+			task.Id)
 	}
 
 	return 0, nil

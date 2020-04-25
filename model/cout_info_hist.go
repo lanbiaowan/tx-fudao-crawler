@@ -7,6 +7,35 @@ import (
 	"github.com/jinzhu/gorm"
 )
 
+/*
+	6001：语文
+	6002：数学
+	6005：英语
+	6009：地理
+	6007：政治
+	6006：生物
+	6003：化学
+	6004：物理
+	6010：讲座
+	7057：编程【只有 3 4 5】
+	7058：科学
+*/
+type CourseCountItem struct {
+	DateTime   string `json:"date_time"`
+	Chinese    int    `json:"chinese"`
+	Math       int    `json:"math"`
+	English    int    `json:"english"`
+	Geo        int    `json:"geo"`
+	Political  int    `json:"political"`
+	Bio        int    `json:"bio"`
+	Chemistry  int    `json:"chemistry"`
+	Physical   int    `json:"physical"`
+	Lecture    int    `json:"lecture"`
+	Coding     int    `json:"coding"`
+	Science    int    `json:"science"`
+	CreateTime string `json:"create_time"`
+}
+
 type CountInfoHist struct {
 	Id uint32 `gorm:"column:id;PRIMARY_KEY" json:"id"`
 
@@ -37,8 +66,7 @@ func (a *CountHistoryModel) Insert(data *CountInfoHist) (err error) {
 	param = append(param, data.Subject)
 	param = append(param, data.CourseCount)
 	param = append(param, data.CreateTime)
-	stmt := fmt.Sprintf(`INSERT INTO count_info_hists(date_time,subject,course_count,grade,create_time) VALUES(?,?,?,?) %s 
-		ON DUPLICATE KEY UPDATE course_count=VALUES(course_count)`)
+	stmt := fmt.Sprintf(`INSERT INTO count_info_hists(date_time,subject,course_count,create_time) VALUES(?,?,?,?) ON DUPLICATE KEY UPDATE course_count=VALUES(course_count)`)
 	return a.Db.Exec(stmt, param...).Error
 }
 
@@ -60,11 +88,11 @@ func (a *CountHistoryModel) BulkUpsert(data []CountInfoHist) error {
 	return a.Db.Exec(stmt, param...).Error
 }
 
-func (a *CountHistoryModel) QueryCountList() (list []CountInfoHist, err error) {
+func (a *CountHistoryModel) QueryCountList() (list []*CourseCountItem, err error) {
 
-	rawSQL := `SELECT id,date_time,subject,sys_count,course_count,create_time
+	rawSQL := `SELECT id,date_time,subject,course_count,create_time
 		FROM count_info_hists
-		WHERE order by date_time desc
+		WHERE 1 order by date_time desc
 	`
 	rows, err := a.Db.Raw(rawSQL).Rows()
 	if err != nil {
@@ -73,13 +101,70 @@ func (a *CountHistoryModel) QueryCountList() (list []CountInfoHist, err error) {
 
 	defer rows.Close()
 
-	list = []CountInfoHist{}
-	item := CountInfoHist{}
+	list = []*CourseCountItem{}
+	subjectItem := CountInfoHist{}
+
+	uniqueDateList := []string{}
+
+	tempItemMap := map[string]*CourseCountItem{}
 	// 逐条解析
 	for rows.Next() {
-		a.Db.ScanRows(rows, &item)
-		list = append(list, item)
+		err := a.Db.ScanRows(rows, &subjectItem)
+
+		if err != nil {
+			continue
+		}
+
+		val, ok := tempItemMap[subjectItem.DateTime]
+
+		//首次构建
+		if !ok {
+			item := &CourseCountItem{}
+			item.DateTime = subjectItem.DateTime
+			ConvertCountInfoIntoItem(&subjectItem, item)
+			tempItemMap[item.DateTime] = item
+			uniqueDateList = append(uniqueDateList, item.DateTime)
+		} else {
+			ConvertCountInfoIntoItem(&subjectItem, val)
+		}
+
+	}
+
+	for _, v := range uniqueDateList {
+		item, ok := tempItemMap[v]
+		if ok {
+			list = append(list, item)
+		}
 	}
 
 	return list, nil
+}
+
+func ConvertCountInfoIntoItem(info *CountInfoHist, item *CourseCountItem) {
+
+	switch info.Subject {
+
+	case 6001:
+		item.Chinese = info.CourseCount
+	case 6002:
+		item.Math = info.CourseCount
+	case 6005:
+		item.English = info.CourseCount
+	case 6009:
+		item.Geo = info.CourseCount
+	case 6007:
+		item.Political = info.CourseCount
+	case 6006:
+		item.Bio = info.CourseCount
+	case 6003:
+		item.Chemistry = info.CourseCount
+	case 6004:
+		item.Physical = info.CourseCount
+	case 6010:
+		item.Lecture = info.CourseCount
+	case 7057:
+		item.Coding = info.CourseCount
+	case 7058:
+		item.Science = info.CourseCount
+	}
 }

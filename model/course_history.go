@@ -58,8 +58,22 @@ func (a *CourseHistoryModel) BulkUpsert(data []HistoryData) error {
 		param = append(param, d.CreateTime)
 	}
 	stmt := fmt.Sprintf(`INSERT INTO fudao_course_history(date_time,subject,course_id,grade,
-		price,title,teacher,detail,create_time) VALUES %s 
+		price,title,teacher,detail,create_time) VALUES %s
 		ON DUPLICATE KEY UPDATE price=VALUES(price),detail=VALUES(detail)`,
 		strings.Join(str, ","))
 	return a.Db.Exec(stmt, param...).Error
+}
+
+func (a *CourseHistoryModel) QueryDetail(DateTime string, Subject int) (item *CourseHistory, err error) {
+
+	item = &CourseHistory{}
+
+	err = a.Db.Where("date_time = ? AND subject = ?", DateTime, Subject).First(item).Error
+
+	if err != nil {
+		return nil, err
+	}
+
+	return item, err
+
 }

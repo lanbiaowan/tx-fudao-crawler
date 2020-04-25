@@ -21,12 +21,12 @@
 ![](static/process.png)
 
 目录服务说明：
-####    1、crawler 爬虫服务，抓取数据 并把数据导入到Redis 队列，队列名称，fudao_history。
-####    2、fudao_consumer 数据消费者服务。从redis队列消费数据 写入到Redis。
-####    3、fudao_viewer 历史数据 前端数据API，提供查看功能。
+#####    1、crawler 爬虫服务，抓取数据 并把数据导入到Redis 队列，队列名称，fudao_history。
+#####    2、fudao_consumer 数据消费者服务。从redis队列消费数据 写入到Redis。
+#####    3、fudao_viewer 历史数据 前端数据API，提供查看功能。
 
 
-### a. 系统要求
+#### a. 系统要求
     MySql 5.7+
     Redis
 
@@ -42,6 +42,7 @@
 初二：6002
 初三：6003
 小学一年级到六年级：7001-7006
+高一到高三： 5001-5003
 
 课程类型代码：
 6001：语文
@@ -62,7 +63,7 @@ curl -H"referer: https://fudao.qq.com/subjec" "https://fudao.qq.com/cgi-proxy/co
 
 
 #### c. 数据存储设计
-
+sql文件记录在 database/database.sql
 学科课程数量：（id为自增主键，date_time+subject+grade是唯一key）
 | **字段名**   | **数据类型**   | **字段说明**   |
 |:----|:----|:----|
@@ -88,8 +89,17 @@ curl -H"referer: https://fudao.qq.com/subjec" "https://fudao.qq.com/cgi-proxy/co
 
 
 
-### 3. 安装配置说明
+### 3. 服务启动配置说明
 
 ```shell
 ./crawler/crawler -c./crawler/crawler.conf
+
+./fudao_viewer/fudao_viewer -c=./fudao_viewer/fudao_viewer.conf
+
+./fudao_consumer/fudao_consumer -c=./fudao_consumer/fudao_consumer.conf
 ```
+
+### 4. 最终效果
+
+![](static/demo.jpg)
+![](static/demo2.jpg)

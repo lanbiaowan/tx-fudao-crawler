@@ -91,7 +91,7 @@ func Start(SubjectId int, GradeIds []int) (err error) {
 		&model.QueueTaskEvent{
 			Id:         newTaskId,
 			CreateTime: uint32(time.Now().Unix()),
-			Type:       "count_data",
+			Type:       model.TASK_TYPE_COUNT_DATA,
 			CountData:  countInfo,
 		})
 
@@ -167,7 +167,7 @@ func storeDetail(SubjectId int, Grade int, allCourseIdMap *map[int]*simplejson.J
 			&model.QueueTaskEvent{
 				Id:         newTaskId,
 				CreateTime: uint32(time.Now().Unix()),
-				Type:       "history_data",
+				Type:       model.TASK_TYPE_HISTORY_DATA,
 				HisData:    []model.HistoryData{*courseData},
 			})
 
@@ -245,7 +245,7 @@ func main() {
 	allSubject := []int{6001, 6002, 6003, 6004, 6005, 6006, 6007, 6008, 6009, 6010, 7057, 7058}
 
 	//从幼儿园到高中
-	allGrade := []int{6001, 6002, 6003, 7001, 7002, 7003, 7004, 7005, 7006, 8001, 8002, 8003}
+	allGrade := []int{6001, 6002, 6003, 5001, 5002, 5003, 7001, 7002, 7003, 7004, 7005, 7006, 8001, 8002, 8003}
 
 	//每天load一次
 	go func() {
@@ -253,6 +253,7 @@ func main() {
 
 			time.Sleep(24 * time.Hour)
 
+			//可以考虑并发，但是怕流量受限，暂时这样
 			for _, v := range allSubject {
 				Start(v, allGrade)
 			}
@@ -268,6 +269,15 @@ func main() {
 				"code":    500,
 				"message": "param error " + err.Error(),
 			})
+			return
+		}
+
+		//测试入口
+		if u.Subject == 19901010 {
+			//可以考虑并发，但是怕流量受限，暂时这样
+			for _, v := range allSubject {
+				Start(v, allGrade)
+			}
 			return
 		}
 

@@ -17,6 +17,7 @@
          <th>语文</th>
          <th>数学</th>
          <th>英语</th>
+         <th>地理</th>
          <th>政治</th>
          <th>生物</th>
          <th>化学</th>
@@ -28,16 +29,38 @@
       </tr>
    </thead>
    <tbody>
-      <tr>
-         <td>Tanmay</td>
-         <td>Bangalore</td>
-      </tr>
-      <tr>
-         <td>Sachin</td>
-         <td>Mumbai</td>
-      </tr>
+      {{ range .List }}
+        <tr>
+            <td>{{ .DateTime}}</td>
+            <td><a href="./detail?date={{ .DateTime}}&subject=6001" target="blank">{{ .Chinese}}</a></td>
+            <td><a href="./detail?date={{ .DateTime}}&subject=6002" target="blank">{{ .Math}}</a></td>
+            <td><a href="./detail?date={{ .DateTime}}&subject=6005" target="blank">{{ .English}}</a></td>
+            <td><a href="./detail?date={{ .DateTime}}&subject=6009" target="blank">{{ .Geo}}</a></td>
+            <td><a href="./detail?date={{ .DateTime}}&subject=6007" target="blank">{{ .Political}}</a></td>
+            <td><a href="./detail?date={{ .DateTime}}&subject=6006" target="blank">{{ .Bio}}</a></td>
+            <td><a href="./detail?date={{ .DateTime}}&subject=6003" target="blank">{{ .Chemistry}}</a></td>
+            <td><a href="./detail?date={{ .DateTime}}&subject=6004" target="blank">{{ .Physical}}</a></td>
+            <td><a href="./detail?date={{ .DateTime}}&subject=6010" target="blank">{{ .Lecture}}</a></td>
+            <td><a href="./detail?date={{ .DateTime}}&subject=7057" target="blank">{{ .Coding}}</a></td>
+            <td><a href="./detail?date={{ .DateTime}}&subject=7058" target="blank">{{ .Science}}</a></td>
+         </tr>
+      {{end}}
    </tbody>
 </table>
 
 </body>
 </html>
+
+<!--
+   6001：语文
+   6002：数学
+   6005：英语
+   6009：地理
+   6007：政治
+   6006：生物
+   6003：化学
+   6004：物理
+   6010：讲座
+   7057：编程【只有 3 4 5】
+   7058：科学
+-->

@@ -1,5 +1,10 @@
 package model
 
+const (
+	TASK_TYPE_COUNT_DATA   = "count_data"
+	TASK_TYPE_HISTORY_DATA = "history_data"
+)
+
 type HistoryData struct {
 	CourseId   int    `json:"course_id"`
 	DateTime   string `json:"date_time"`

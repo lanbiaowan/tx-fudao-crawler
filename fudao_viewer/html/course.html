@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8"> 
+	<title>Bootstrap 实例 - 基本的表格</title>
+	<link rel="stylesheet" href="https://cdn.staticfile.org/twitter-bootstrap/3.3.7/css/bootstrap.min.css">  
+	<script src="https://cdn.staticfile.org/jquery/2.1.1/jquery.min.js"></script>
+	<script src="https://cdn.staticfile.org/twitter-bootstrap/3.3.7/js/bootstrap.min.js"></script>
+   <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-jsonview/1.2.3/jquery.jsonview.min.js"></script>
+</head>
+<body>
+
+<table class="table">
+	<caption>课程详情:{{ .courseDetail.CourseId}}</caption>
+   <thead>
+      <tr>
+         <th>日期</th>
+         <th>老师</th>
+         <th>价格</th>
+         <th>名称</th>
+         <th>采集时间</th>
+      </th>
+      </tr>
+   </thead>
+   <tbody> 
+        <tr>
+            <td>{{ .DateTime}}</td>
+            <td>{{ .courseDetail.Teacher}}</td>
+            <td>{{ .courseDetail.Price}}</td>
+            <td>{{ .courseDetail.Title}}</td> 
+            <td>{{ .courseDetail.CreateTime}}</td>
+         </tr>
+   </tbody>
+
+</table>
+
+   详情数据：
+   <div id="json"></div>
+   <div id="json-collasped"></div>
+</body>
+
+<script type="text/javascript">
+   var json = {{ .courseDetail.Detail}};
+
+   $(function() {
+     $("#json").JSONView(json);
+     // with options
+     $("#json-collasped").JSONView(json, { collapsed: true });
+   });
+
+</script>
+</html>
