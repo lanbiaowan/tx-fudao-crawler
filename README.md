@@ -56,9 +56,14 @@
 7057：编程【只有 3 4 5】
 7058：科学
 
+请求过程一定要带上 referer和user-agent
 curl -H"referer: https://fudao.qq.com/subjec" "https://fudao.qq.com/cgi-proxy/course/discover_subject?client=4&platform=3&version=30&grade=6001&subject=6002&showid=0&page=1&size=10&t=0.4440"
 
 通过修改grade，subject 批量得到课程数据。（暂时没考虑分页的情况）
+
+解析课程详情：
+https://fudao.qq.com/pc/course.html?course_id=204372
+这里猜测是前端SSR 服务端渲染，需要从html文件里面解析得到JSON详情。
 
 
 #### c. 数据存储设计
@@ -90,11 +95,7 @@ sql文件记录在 database/database.sql
 
 
 ### 3. 服务启动配置说明
-需要要 下述 `*.conf` 配置文件里面配置好Redis 和Mysql的信息。
-
-启动 go module 管理
-go env -w GO111MODULE=on
-go env -w GOPROXY=https://goproxy.cn,direct
+需要在下述 `*.conf` 配置文件里面配置好Redis 和 Mysql 
 
 ```shell
 ./crawler/crawler -c./crawler/crawler.conf
@@ -104,12 +105,16 @@ go env -w GOPROXY=https://goproxy.cn,direct
 ./fudao_consumer/fudao_consumer -c=./fudao_consumer/fudao_consumer.conf
 ```
 
+编译使用：启动 go module 管理
+go env -w GO111MODULE=on
+go env -w GOPROXY=https://goproxy.cn,direct
+
 
 ### 4. 最终效果
 开始的时候没有数据：
 在命令行主动调用一下 crawler 触发 主动采集
 `curl "127.0.0.1:8089/gather?subject=19901010"`
-如果要采集某个科目的就修改 subject 参数就好了
+如果要采集某个科目的就修改 subject 参数就好了，这里为了方便测试，写了一个特殊的 subject参数来做全量采集。
 
 然后 启动 fudao_viewer 进程之后就可以看到数据了
 http://127.0.0.1:8092/index
