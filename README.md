@@ -20,9 +20,9 @@
 ![](static/process.png)
 
 目录服务说明：
-#####    1、crawler 爬虫服务，抓取数据 并把数据导入到Redis 队列，队列名称。
-#####    2、fudao_consumer 数据消费者服务。从redis队列消费数据 写入到Redis。
-#####    3、fudao_viewer 历史数据 前端数据API，提供查看功能。
+#####    1、crawler: 爬虫服务，抓取数据 并把数据导入到Redis 队列，队列名称。
+#####    2、fudao_consumer: 数据消费者服务。从redis队列消费数据 写入到 Mysql。
+#####    3、fudao_viewer: 历史数据 前端数据API，提供查看功能。
 
 
 #### a. 系统要求
@@ -72,11 +72,11 @@ sql文件记录在 database/database.sql
 学科课程数量：（id为自增主键，date_time+subject+grade是唯一key）
 | **字段名**   | **数据类型**   | **字段说明**   |
 |:----|:----|:----|
-| **id**  | bigint   | 主键ID   |
-| **date_time**  | date   | 日期   |
-| **subject**  | int   | 学科   | 
-| **course_count**  | int   | 课数量   |
-| **create_time**  | datetime   | 创建时间   |
+| **id**  | bigint   | 主键ID  |
+| **date_time**  | date   | 日期  |
+| **subject**  | int   | 学科  |
+| **course_count**  | int   | 课数量  |
+| **create_time**  | datetime   | 创建时间  |
 
 学科详情：（id为自增主键，date_time+course_id）
 | **字段名**   | **数据类型**   | **字段说明**   |

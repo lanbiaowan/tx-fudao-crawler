@@ -116,6 +116,7 @@ func GatherCourseDetail(SubjectId int, allCourseIdMap *map[int]*simplejson.Json,
 
 		for _, cidStr := range cisList {
 			cidId, _ := strconv.Atoi(cidStr)
+			//value 为nil 是为了二次去详情页抓取
 			if cidId > 0 {
 				(*allCourseIdMap)[cidId] = nil
 			}
