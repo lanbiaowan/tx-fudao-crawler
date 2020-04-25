@@ -1,7 +1,6 @@
 # 项目说明 
 ------
-是一个简单的腾讯课堂爬虫涉及
-
+是一个简单的腾讯课堂爬虫
 > * 功能介绍
 > * 方案设计
 > * 流程图
@@ -21,7 +20,7 @@
 ![](static/process.png)
 
 目录服务说明：
-#####    1、crawler 爬虫服务，抓取数据 并把数据导入到Redis 队列，队列名称，fudao_history。
+#####    1、crawler 爬虫服务，抓取数据 并把数据导入到Redis 队列，队列名称。
 #####    2、fudao_consumer 数据消费者服务。从redis队列消费数据 写入到Redis。
 #####    3、fudao_viewer 历史数据 前端数据API，提供查看功能。
 
@@ -64,11 +63,12 @@ curl -H"referer: https://fudao.qq.com/subjec" "https://fudao.qq.com/cgi-proxy/co
 
 #### c. 数据存储设计
 sql文件记录在 database/database.sql
+
 学科课程数量：（id为自增主键，date_time+subject+grade是唯一key）
 | **字段名**   | **数据类型**   | **字段说明**   |
 |:----|:----|:----|
 | **id**  | bigint   | 主键ID   |
-| **date_time**  | date   | 每日的数量   |
+| **date_time**  | date   | 日期   |
 | **subject**  | int   | 学科   | 
 | **course_count**  | int   | 课数量   |
 | **create_time**  | datetime   | 创建时间   |
@@ -77,10 +77,10 @@ sql文件记录在 database/database.sql
 | **字段名**   | **数据类型**   | **字段说明**   |
 |:----|:----|:----|
 | **id**  | bigint   | 主键ID   |
-| **date_time**  | date   | 每日的数量   |
+| **date_time**  | date   | 日期   |
 | **course_id**  | int   | 课程id   |
 | **subject**  | int   | 学科   |
-| **grade**  | int   | 年纪   |
+| **grade**  | string   | 年级   |
 | **title**  | string   | 课程名称   |
 | **price**  | decailmal   | 价格   |
 | **teacher**  | string   | 老师名称   |
@@ -99,7 +99,11 @@ sql文件记录在 database/database.sql
 ./fudao_consumer/fudao_consumer -c=./fudao_consumer/fudao_consumer.conf
 ```
 
+
+
 ### 4. 最终效果
+
+http://127.0.0.1:8092/index
 
 ![](static/demo.jpg)
 ![](static/demo2.jpg)
