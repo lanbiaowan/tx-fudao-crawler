@@ -106,9 +106,10 @@ sql文件记录在 database/database.sql
 ```
 
 编译使用：启动 go module 管理
+```
 go env -w GO111MODULE=on
 go env -w GOPROXY=https://goproxy.cn,direct
-
+```
 
 ### 4. 最终效果
 开始的时候没有数据：
