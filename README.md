@@ -92,6 +92,10 @@ sql文件记录在 database/database.sql
 ### 3. 服务启动配置说明
 需要要 下述 `*.conf` 配置文件里面配置好Redis 和Mysql的信息。
 
+启动 go module 管理
+go env -w GO111MODULE=on
+go env -w GOPROXY=https://goproxy.cn,direct
+
 ```shell
 ./crawler/crawler -c./crawler/crawler.conf
 
