@@ -4,12 +4,14 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/lilien1010/tx-fudao-crawler/common"
 	"github.com/lilien1010/tx-fudao-crawler/model"
+
 	//"io/ioutil"
 	"log"
 
-	"github.com/jinzhu/gorm"
 	"net/http"
 	"runtime"
+
+	"github.com/jinzhu/gorm"
 	//"sync"
 )
 
@@ -92,8 +94,13 @@ func main() {
 			})
 			return
 		}
+		// log.Println(courseDetail)
+		// c.JSON(http.StatusOK, gin.H{
+		// 	"code":    500,
+		// 	"message": courseDetail,
+		// })
 		c.HTML(http.StatusOK, "course.html", gin.H{
-			"courseDetail": courseDetail,
+			"List": courseDetail,
 		})
 	})
 

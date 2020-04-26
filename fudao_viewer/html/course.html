@@ -15,39 +15,84 @@
    <thead>
       <tr>
          <th>日期</th>
+         <th>ID</th> 
+         <th>名称</th> 
          <th>老师</th>
          <th>价格</th>
-         <th>名称</th> 
          <th>采集时间</th>
+         <th>详情</th>
       </th>
       </tr>
    </thead>
-   <tbody> 
+   <tbody>
+    {{ range .List }}
         <tr>
-            <td>{{ .courseDetail.DateTime}}</td>
-            <td>{{ .courseDetail.Teacher}}</td>
-            <td class="price">{{ .courseDetail.Price}}</td>
-            <td style="width: 20%;">{{ .courseDetail.Title}}</td>
-            <td>{{ .courseDetail.CreateTime}}</td>
+            <td>{{ .DateTime}}</td>
+            <td style="width: 5%;">{{ .CourseId}}</td>
+            <td style="width: 20%;">{{ .Title}}</td>
+            <td>{{ .Teacher}}</td>
+            <td class="price">{{ .Price}}</td>
+            <td>{{ .CreateTime}}</td>
+            <td >
+
+              <!-- 按钮触发模态框 -->
+            <button class="btn btn-primary btn-lg" data-toggle="modal" data-target="#myModal-{{ .CourseId}}">
+              查看
+            </button>
+            <!-- 模态框（Modal） -->
+            <div class="modal fade" id="myModal-{{ .CourseId}}" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+              <div class="modal-dialog">
+                <div class="modal-content">
+                  <div class="modal-header">
+                    <button type="button" class="close" data-dismiss="modal"
+                        aria-hidden="true">×
+                    </button>
+                    <h4 class="modal-title json-collasped" id="myModalLabel">
+                      {{ .Detail}}
+                    </h4>
+                  </div>
+                  <div class="modal-body">
+                    按下 ESC 按钮退出。
+                  </div>
+                  <div class="modal-footer">
+                    <button type="button" class="btn btn-default" 
+                        data-dismiss="modal">关闭
+                    </button> 
+                  </div>
+                </div><!-- /.modal-content -->
+              </div><!-- /.modal-dialog -->
+            </div><!-- /.modal --> 
+            </td>
          </tr>
+    {{end}}
    </tbody>
 
 </table>
-
-   JSON详情数据：
-   <div id="json"></div>
-   <div id="json-collasped"></div>
+ 
 </body>
 
 <script type="text/javascript">
-   var json = {{ .courseDetail.Detail}};
+   var json =[1];
 
-   $(function() {
-     $("#json").JSONView(json);
+   $(function() { 
+
      // with options
-     $("#json-collasped").JSONView(json, { collapsed: true });
+     $(".json-collasped").each(function(){
+        var str =     $(this).text()
+        var json = []
+        try{
+          json = JSON.parse(str)
+        }catch(e){
+          console.log(e)
+          return
+        }
+        $(this).JSONView(json, { collapsed: false });
+      });
 
-     $('.price').html(parseInt($('.price').text())/100)
+
+     $('.price').each(function(){
+      $(this).html(parseInt($(this).text())/100) 
+    })
    });
 
 </script>

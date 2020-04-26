@@ -64,11 +64,11 @@ func (a *CourseHistoryModel) BulkUpsert(data []HistoryData) error {
 	return a.Db.Exec(stmt, param...).Error
 }
 
-func (a *CourseHistoryModel) QueryDetail(DateTime string, Subject int) (item *CourseHistory, err error) {
+func (a *CourseHistoryModel) QueryDetail(DateTime string, Subject int) (item []CourseHistory, err error) {
 
-	item = &CourseHistory{}
+	item = []CourseHistory{}
 
-	err = a.Db.Where("date_time = ? AND subject = ?", DateTime, Subject).First(item).Error
+	err = a.Db.Where("date_time = ? AND subject = ?", DateTime, Subject).Find(&item).Error
 
 	if err != nil {
 		return nil, err
